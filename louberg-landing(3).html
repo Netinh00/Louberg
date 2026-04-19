@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Louberg System — Automação Inteligente via WhatsApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0b1626;
+  --navy-mid:#111f36;
+  --navy-light:#1a2e50;
+  --navy-card:#0f1a2e;
+  --white:#e8edf5;
+  --muted:rgba(232,237,245,.45);
+  --red:#e03428;
+  --red-dark:#b82820;
+  --green:#25d366;
+  --border:rgba(232,237,245,.07);
+  --border-h:rgba(232,237,245,.16);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--navy);color:var(--white);font-family:'DM Sans',sans-serif;font-weight:400;line-height:1.6;overflow-x:hidden;cursor:none;}
+
+/* CURSOR */
+#cur{position:fixed;width:9px;height:9px;background:var(--red);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s,height .2s,background .2s;}
+#cur-r{position:fixed;width:30px;height:30px;border:1px solid rgba(224,52,40,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .22s,height .22s,border-color .2s;}
+@media(hover:none){#cur,#cur-r{display:none;}body{cursor:auto;}}
+
+/* CANVAS */
+#bgc{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1rem 5%;background:rgba(11,22,38,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.logo-mark{width:36px;height:36px;flex-shrink:0;}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:1.55rem;letter-spacing:.06em;color:var(--white);line-height:1;}
+.logo-text span{color:var(--red);}
+.nav-r{display:flex;align-items:center;gap:1.2rem;}
+.nav-links{display:flex;gap:1.5rem;list-style:none;}
+.nav-links a{font-size:.8rem;color:var(--muted);text-decoration:none;letter-spacing:.02em;transition:color .2s;}
+.nav-links a:hover{color:var(--white);}
+.nav-cta{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;text-decoration:none;font-size:.8rem;font-weight:600;padding:.48rem 1.1rem;border-radius:50px;transition:background .2s,transform .15s;white-space:nowrap;}
+.nav-cta:hover{background:var(--red-dark);transform:translateY(-1px);}
+.nav-cta svg{width:14px;height:14px;}
+.ham{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:3px;}
+.ham span{display:block;width:21px;height:1.5px;background:var(--white);border-radius:2px;transition:all .3s;}
+.ham.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+.ham.open span:nth-child(2){opacity:0;}
+.ham.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+.mob-menu{display:none;position:fixed;top:62px;left:0;right:0;background:rgba(11,22,38,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:1.5rem 5%;flex-direction:column;gap:.9rem;border-bottom:1px solid var(--border);z-index:99;}
+.mob-menu.open{display:flex;}
+.mob-menu a{font-size:.95rem;color:var(--muted);text-decoration:none;padding:.45rem 0;border-bottom:1px solid var(--border);}
+.mob-menu a:last-child{border:none;color:var(--green);font-weight:600;}
+
+/* LAYOUT */
+section{position:relative;z-index:1;}
+.c{max-width:1100px;margin:0 auto;padding:0 5%;}
+.lbl{font-size:.68rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:.65rem;display:flex;align-items:center;gap:7px;}
+.lbl::before{content:'';width:16px;height:1.5px;background:var(--red);}
+.ttl{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.2rem,4vw,3.1rem);letter-spacing:.02em;line-height:1.05;margin-bottom:.8rem;color:var(--white);}
+.sub{font-size:.94rem;color:var(--muted);max-width:490px;line-height:1.72;}
+
+/* HERO */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;padding:7rem 5% 4rem;overflow:hidden;}
+.h-glow{position:absolute;pointer-events:none;border-radius:50%;}
+.h-glow-1{width:550px;height:550px;background:radial-gradient(circle,rgba(224,52,40,.1) 0%,transparent 70%);top:-140px;right:-140px;}
+.h-glow-2{width:380px;height:380px;background:radial-gradient(circle,rgba(37,211,102,.05) 0%,transparent 70%);bottom:-80px;left:-60px;}
+.h-con{position:relative;z-index:2;max-width:640px;}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(224,52,40,.1);border:1px solid rgba(224,52,40,.22);color:#ff7266;font-size:.7rem;font-weight:600;padding:.3rem .85rem;border-radius:50px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:1.3rem;animation:fu .6s ease both;}
+.bdot{width:6px;height:6px;background:var(--red);border-radius:50%;animation:pulse 1.5s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.5);}}
+.h-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,7vw,5.4rem);line-height:.94;letter-spacing:.02em;margin-bottom:1.2rem;animation:fu .7s .1s ease both;}
+.h-title em{font-style:normal;color:var(--red);}
+.h-sub{font-size:1rem;color:var(--muted);max-width:490px;line-height:1.75;margin-bottom:1.9rem;animation:fu .7s .2s ease both;}
+.h-btns{display:flex;flex-wrap:wrap;gap:.85rem;animation:fu .7s .3s ease both;}
+.btn-p{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;text-decoration:none;font-size:.88rem;font-weight:600;padding:.78rem 1.7rem;border-radius:50px;transition:all .2s;box-shadow:0 0 36px rgba(37,211,102,.15);letter-spacing:.01em;}
+.btn-p:hover{background:#1db954;transform:translateY(-2px);box-shadow:0 0 55px rgba(37,211,102,.28);}
+.btn-p svg{width:19px;height:19px;}
+.btn-s{display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--white);text-decoration:none;font-size:.88rem;font-weight:500;padding:.78rem 1.7rem;border-radius:50px;border:1px solid var(--border);transition:all .2s;}
+.btn-s:hover{border-color:var(--border-h);background:rgba(232,237,245,.04);}
+.stats{display:flex;flex-wrap:wrap;gap:1.8rem;margin-top:2.8rem;padding-top:1.8rem;border-top:1px solid var(--border);animation:fu .7s .4s ease both;}
+.stat{display:flex;flex-direction:column;gap:1px;}
+.s-num{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.02em;color:var(--white);}
+.s-num span{color:var(--red);}
+.s-lbl{font-size:.68rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
+.phone-wrap{position:absolute;right:5%;top:50%;transform:translateY(-50%);z-index:2;animation:pup 1s .5s ease both,pfloat 4s 1.5s ease-in-out infinite;}
+@keyframes pfloat{0%,100%{transform:translateY(-50%) translateY(0);}50%{transform:translateY(-50%) translateY(-11px);}}
+.phone{width:248px;background:var(--navy-mid);border-radius:30px;border:1px solid rgba(255,255,255,.09);overflow:hidden;box-shadow:0 36px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);}
+.ph{background:#080f1c;padding:9px 13px 7px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.05);}
+.pav{width:30px;height:30px;background:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:.8rem;color:#fff;flex-shrink:0;}
+.pn{font-size:.72rem;font-weight:600;color:var(--white);}
+.po{font-size:.6rem;color:var(--green);}
+.pc{background:#06101c;padding:9px;display:flex;flex-direction:column;gap:6px;min-height:290px;}
+.msg{max-width:87%;padding:7px 10px;border-radius:11px;font-size:.68rem;line-height:1.55;}
+.mi{background:var(--navy-card);border-radius:11px 11px 11px 2px;align-self:flex-start;color:var(--white);}
+.mo{background:#1a5c35;border-radius:11px 11px 2px 11px;align-self:flex-end;color:#dcffea;}
+.mt{font-size:.56rem;color:var(--muted);margin-top:2px;text-align:right;}
+.typing{display:flex;align-items:center;gap:4px;background:var(--navy-card);padding:8px 11px;border-radius:11px 11px 11px 2px;align-self:flex-start;width:fit-content;}
+.dot{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:blink 1.2s ease infinite;}
+.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1);}}
+
+/* SERVICES */
+.services{padding:5.5rem 0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy-mid) 100%);}
+.sv-hd{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1.8rem;margin-bottom:2.8rem;}
+.sv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:18px;overflow:hidden;}
+.sv-card{background:var(--navy-mid);padding:1.9rem;transition:background .25s;position:relative;overflow:hidden;}
+.sv-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--red);transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+.sv-card:hover{background:var(--navy-light);}
+.sv-card:hover::after{transform:scaleX(1);}
+.sv-ic{width:44px;height:44px;background:rgba(224,52,40,.08);border:1px solid rgba(224,52,40,.18);border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:1.2rem;}
+.sv-ic svg{width:21px;height:21px;stroke:var(--red);fill:none;stroke-width:1.5;}
+.sv-t{font-family:'Bebas Neue',sans-serif;font-size:1.28rem;letter-spacing:.04em;margin-bottom:.45rem;color:var(--white);}
+.sv-d{font-size:.84rem;color:var(--muted);line-height:1.65;}
+
+/* HOW */
+.how{padding:5.5rem 0;background:var(--navy);}
+.how-in{display:grid;grid-template-columns:1fr 1fr;gap:4.5rem;align-items:center;}
+.steps{display:flex;flex-direction:column;}
+.step{display:flex;gap:1.3rem;padding:1.5rem 0;border-bottom:1px solid var(--border);}
+.step:last-child{border-bottom:none;}
+.sn{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:rgba(224,52,40,.15);line-height:1;min-width:32px;transition:color .2s;}
+.step:hover .sn{color:var(--red);}
+.st{font-weight:600;font-size:.93rem;margin-bottom:.22rem;color:var(--white);}
+.sd{font-size:.82rem;color:var(--muted);line-height:1.6;}
+.dash{background:var(--navy-card);border:1px solid var(--border);border-radius:18px;padding:1.4rem;}
+.d-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;}
+.d-ttl{font-size:.7rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:.07em;}
+.d-live{font-size:.6rem;background:rgba(37,211,102,.09);color:var(--green);padding:3px 9px;border-radius:50px;font-weight:600;}
+.d-met{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:11px;overflow:hidden;margin-bottom:1.1rem;}
+.d-m{background:var(--navy);padding:.85rem .65rem;text-align:center;}
+.d-n{font-family:'Bebas Neue',sans-serif;font-size:1.45rem;color:var(--white);letter-spacing:.03em;}
+.d-l{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.br{margin-bottom:.65rem;}
+.bm{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-bottom:4px;}
+.bt{background:rgba(255,255,255,.06);height:5px;border-radius:3px;overflow:hidden;}
+.bf{height:100%;border-radius:3px;}
+.bg{background:var(--green);}.bb{background:#4a90e2;}.bred{background:var(--red);}
+.leads{display:flex;flex-direction:column;gap:6px;margin-top:.9rem;}
+.lr{display:flex;align-items:center;gap:8px;padding:7px 8px;background:var(--navy);border-radius:8px;font-size:.68rem;}
+.ld{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ln{flex:1;color:var(--white);font-weight:500;}
+.tag{font-size:.58rem;padding:2px 7px;border-radius:50px;font-weight:600;}
+.th{background:rgba(224,52,40,.13);color:#ff7266;}
+.tw{background:rgba(255,171,64,.11);color:#ffab40;}
+.tc{background:rgba(74,144,226,.11);color:#7ab4f5;}
+
+/* PRICING */
+.pricing{padding:5.5rem 0;background:linear-gradient(180deg,var(--navy-mid) 0%,var(--navy) 100%);}
+.p-hd{text-align:center;margin-bottom:2.8rem;}
+.p-hd .lbl{justify-content:center;}
+.p-hd .lbl::before{display:none;}
+.p-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:1.3rem;max-width:920px;margin:0 auto;}
+.p-card{background:var(--navy-card);border:1px solid var(--border);border-radius:18px;padding:1.9rem;position:relative;transition:transform .25s,border-color .25s;}
+.p-card:hover{transform:translateY(-4px);}
+.p-card.feat{border-color:rgba(224,52,40,.45);background:var(--navy-light);}
+.f-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:.6rem;font-weight:700;padding:3px 13px;border-radius:50px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;}
+.p-name{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;letter-spacing:.05em;margin-bottom:.28rem;color:var(--white);}
+.p-desc{font-size:.76rem;color:var(--muted);}
+.p-price{display:flex;align-items:baseline;gap:3px;margin:.85rem 0 .18rem;}
+.p-cur{font-size:.82rem;color:var(--muted);font-weight:500;}
+.p-num{font-family:'Bebas Neue',sans-serif;font-size:2.7rem;letter-spacing:.02em;color:var(--white);}
+.p-per{font-size:.76rem;color:var(--muted);}
+.p-note{font-size:.7rem;color:var(--muted);margin-bottom:1.2rem;}
+.p-div{border:none;border-top:1px solid var(--border);margin:1rem 0;}
+.p-feats{list-style:none;display:flex;flex-direction:column;gap:.55rem;margin-bottom:1.5rem;}
+.p-feats li{display:flex;align-items:flex-start;gap:8px;font-size:.81rem;color:rgba(232,237,245,.8);}
+.p-feats li::before{content:'';width:14px;height:14px;border-radius:50%;background:rgba(37,211,102,.09) url("data:image/svg+xml,%3Csvg width='9' height='7' viewBox='0 0 9 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3.5L3.2 5.7L8 1' stroke='%2325d366' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;border:1px solid rgba(37,211,102,.22);flex-shrink:0;margin-top:2px;}
+.bpl{display:block;text-align:center;text-decoration:none;padding:.82rem;border-radius:50px;font-size:.82rem;font-weight:600;transition:all .2s;letter-spacing:.02em;}
+.bpl-o{border:1px solid var(--border);color:var(--white);background:transparent;}
+.bpl-o:hover{border-color:var(--border-h);background:rgba(232,237,245,.04);}
+.bpl-f{background:var(--red);color:#fff;border:none;}
+.bpl-f:hover{background:var(--red-dark);}
+
+/* CTA */
+.cta{padding:4.5rem 0;background:var(--navy);}
+.cta-in{background:linear-gradient(135deg,var(--navy-light) 0%,var(--navy-mid) 100%);border:1px solid rgba(224,52,40,.16);border-radius:22px;padding:3.5rem 2.5rem;text-align:center;position:relative;overflow:hidden;}
+.cta-in::before{content:'';position:absolute;top:-70px;right:-70px;width:260px;height:260px;background:radial-gradient(circle,rgba(224,52,40,.13) 0%,transparent 70%);pointer-events:none;}
+.cta-in::after{content:'';position:absolute;bottom:-70px;left:-70px;width:260px;height:260px;background:radial-gradient(circle,rgba(37,211,102,.05) 0%,transparent 70%);pointer-events:none;}
+.cta-t{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.9rem,3.5vw,2.9rem);letter-spacing:.03em;margin-bottom:.7rem;position:relative;z-index:1;}
+.cta-s{font-size:.92rem;color:var(--muted);max-width:420px;margin:0 auto 1.9rem;position:relative;z-index:1;}
+.cta-b{display:flex;justify-content:center;gap:.9rem;flex-wrap:wrap;position:relative;z-index:1;}
+
+/* FOOTER */
+footer{background:var(--navy-mid);border-top:1px solid var(--border);padding:1.8rem 5%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;}
+.ft-b{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.06em;color:rgba(232,237,245,.35);}
+.ft-b span{color:var(--red);}
+.ft-n{font-size:.72rem;color:var(--muted);}
+
+/* ANIMATIONS */
+@keyframes fu{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pup{from{opacity:0;transform:translateY(-50%) translateY(28px);}to{opacity:1;transform:translateY(-50%) translateY(0);}}
+
+/* RESPONSIVE */
+@media(max-width:900px){.phone-wrap{display:none;}.how-in{grid-template-columns:1fr;gap:2.8rem;}.sv-hd{flex-direction:column;align-items:flex-start;}.nav-links{display:none;}.ham{display:flex;}}
+@media(max-width:620px){nav{padding:.85rem 4%;}.hero{padding:5.8rem 4% 3rem;}.h-title{font-size:clamp(2.7rem,11vw,3.4rem);}.stats{gap:1.3rem;}.s-num{font-size:1.8rem;}.services,.how,.pricing,.cta{padding:3.5rem 0;}.c{padding:0 4%;}.cta-in{padding:2.2rem 1.3rem;}.p-grid{grid-template-columns:1fr;}footer{flex-direction:column;text-align:center;}.btn-p,.btn-s{font-size:.82rem;padding:.72rem 1.35rem;}}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-r"></div>
+<canvas id="bgc"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">
+    <svg class="logo-mark" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="18" cy="18" r="18" fill="#0b1626"/>
+      <circle cx="17.5" cy="14.5" r="7" fill="#dde2eb"/>
+      <rect x="21.8" y="14.5" width="4.8" height="13.8" rx="1.1" fill="#dde2eb"/>
+      <rect x="10.5" y="24.2" width="11.3" height="4.1" rx="1.1" fill="#dde2eb"/>
+      <path d="M21.8 22.5L26.6 28.3H21.8Z" fill="#e03428"/>
+    </svg>
+    <span class="logo-text">LOUBERG<span>.</span></span>
+  </a>
+  <div class="nav-r">
+    <ul class="nav-links">
+      <li><a href="#servicos">Serviços</a></li>
+      <li><a href="#como-funciona">Como funciona</a></li>
+      <li><a href="#planos">Planos</a></li>
+    </ul>
+    <a href="https://api.whatsapp.com/send/?phone=557382408927&text=Olá%2C+como+o+sistema+funciona%3F+Estou+interessado!&type=phone_number&app_absent=0" class="nav-cta" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Falar com IA
+    </a>
+    <button class="ham" id="ham" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mob-menu" id="mob">
+  <a href="#servicos" onclick="closeM()">Serviços</a>
+  <a href="#como-funciona" onclick="closeM()">Como funciona</a>
+  <a href="#planos" onclick="closeM()">Planos</a>
+  <a href="https://api.whatsapp.com/send/?phone=557382408927&text=Olá%2C+como+o+sistema+funciona%3F+Estou+interessado!&type=phone_number&app_absent=0" target="_blank" rel="noopener" onclick="closeM()">Falar no WhatsApp →</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="h-glow h-glow-1"></div>
+  <div class="h-glow h-glow-2"></div>
+  <div class="h-con c">
+    <div class="badge"><div class="bdot"></div>Disponível 24/7 via WhatsApp</div>
+    <h1 class="h-title">Seu negócio<br>atendendo <em>sem parar.</em><br>Com IA.</h1>
+    <p class="h-sub">A Louberg System automatiza o atendimento da sua empresa via WhatsApp — agendamentos, triagem de leads e CRM invisível, sem precisar de equipe de TI.</p>
+    <div class="h-btns">
+      <a href="https://api.whatsapp.com/send/?phone=557382408927&text=Olá%2C+como+o+sistema+funciona%3F+Estou+interessado!&type=phone_number&app_absent=0" class="btn-p" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Testar grátis agora
+      </a>
+      <a href="#servicos" class="btn-s">Ver como funciona ↓</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="s-num">24<span>/7</span></span><span class="s-lbl">Atendimento contínuo</span></div>
+      <div class="stat"><span class="s-num">-<span>70%</span></span><span class="s-lbl">Custo operacional</span></div>
+      <div class="stat"><span class="s-num">R$<span>147</span></span><span class="s-lbl">A partir de / mês</span></div>
+    </div>
+  </div>
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="ph"><div class="pav">LS</div><div><div class="pn">Assistente Louberg</div><div class="po">● online agora</div></div></div>
+      <div class="pc">
+        <div class="msg mo">Oi! Quero saber sobre os planos 👋<div class="mt">09:41</div></div>
+        <div class="msg mi">Olá! 😊 Seja bem-vindo à <strong>Louberg System</strong>! Você quer automatizar agendamentos, atendimento ou leads?<div class="mt">09:41</div></div>
+        <div class="msg mo">Agendamento automático para minha clínica<div class="mt">09:42</div></div>
+        <div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="servicos">
+  <div class="c">
+    <div class="sv-hd">
+      <div><div class="lbl">O que oferecemos</div><h2 class="ttl">Automação que<br>resolve de verdade</h2></div>
+      <p class="sub">Para empresas que não têm tempo a perder com processos manuais.</p>
+    </div>
+    <div class="sv-grid">
+      <div class="sv-card">
+        <div class="sv-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div class="sv-t">Agendamento 24/7</div>
+        <p class="sv-d">Integração com Google Agenda. Clientes agendam, confirmam e remarcam via WhatsApp sem intervenção manual.</p>
+      </div>
+      <div class="sv-card">
+        <div class="sv-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="sv-t">CRM Invisível</div>
+        <p class="sv-d">Triagem e qualificação automática de leads via IA. Cada conversa vira dado estruturado sem o cliente perceber.</p>
+      </div>
+      <div class="sv-card">
+        <div class="sv-ic"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="sv-t">Redução de Custo</div>
+        <p class="sv-d">Substitua tarefas repetitivas por automação inteligente. Reduza custo operacional em até 70%.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="how" id="como-funciona">
+  <div class="c">
+    <div class="how-in">
+      <div>
+        <div class="lbl">Como funciona</div>
+        <h2 class="ttl">Do primeiro contato ao fechamento, automático.</h2>
+        <div class="steps">
+          <div class="step"><span class="sn">01</span><div><div class="st">Cliente envia mensagem</div><p class="sd">A IA atende imediatamente no WhatsApp 24h identificando a intenção da conversa.</p></div></div>
+          <div class="step"><span class="sn">02</span><div><div class="st">Triagem e qualificação</div><p class="sd">O sistema identifica lead quente, dúvida técnica ou suporte e direciona para o fluxo correto.</p></div></div>
+          <div class="step"><span class="sn">03</span><div><div class="st">Resolução ou escalonamento</div><p class="sd">Agendamentos confirmados automaticamente. Negociações complexas encaminhadas com contexto completo.</p></div></div>
+          <div class="step"><span class="sn">04</span><div><div class="st">Você acompanha tudo</div><p class="sd">Dashboard com métricas de atendimento, leads qualificados e agendamentos em tempo real.</p></div></div>
+        </div>
+      </div>
+      <div class="dash">
+        <div class="d-hd"><span class="d-ttl">Painel de atendimento</span><span class="d-live">● Ao vivo</span></div>
+        <div class="d-met">
+          <div class="d-m"><div class="d-n">247</div><div class="d-l">Mensagens</div></div>
+          <div class="d-m"><div class="d-n">38</div><div class="d-l">Leads</div></div>
+          <div class="d-m"><div class="d-n">12</div><div class="d-l">Agendados</div></div>
+        </div>
+        <div class="br"><div class="bm"><span>Taxa de resolução</span><span>87%</span></div><div class="bt"><div class="bf bg" style="width:87%"></div></div></div>
+        <div class="br"><div class="bm"><span>Leads qualificados</span><span>64%</span></div><div class="bt"><div class="bf bb" style="width:64%"></div></div></div>
+        <div class="br"><div class="bm"><span>Escalonamentos</span><span>13%</span></div><div class="bt"><div class="bf bred" style="width:13%"></div></div></div>
+        <div class="leads">
+          <div class="lr"><div class="ld" style="background:var(--red)"></div><span class="ln">Maria S. — Clínica Odonto</span><span class="tag th">Quente</span></div>
+          <div class="lr"><div class="ld" style="background:#ffab40"></div><span class="ln">Carlos M. — Pet Shop</span><span class="tag tw">Morno</span></div>
+          <div class="lr"><div class="ld" style="background:#7ab4f5"></div><span class="ln">Ana R. — Academia</span><span class="tag tc">Novo</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="planos">
+  <div class="c">
+    <div class="p-hd">
+      <div class="lbl">Planos</div>
+      <h2 class="ttl">Infraestrutura na nuvem.<br>Preço acessível.</h2>
+      <p class="sub" style="margin:.4rem auto 0;text-align:center;">Tudo incluso na mensalidade. Sem taxa de setup.</p>
+    </div>
+    <div class="p-grid">
+      <div class="p-card">
+        <div class="p-name">Essencial</div><p class="p-desc">Para começar a automatizar</p>
+        <div class="p-price"><span class="p-cur">R$</span><span class="p-num">147</span><span class="p-per">/mês</span></div>
+        <p class="p-note">Infraestrutura na nuvem inclusa</p>
+        <hr class="p-div">
+        <ul class="p-feats"><li>Atendimento via WhatsApp 24/7</li><li>Respostas a dúvidas frequentes</li><li>Encaminhamento para humano</li><li>Relatório mensal básico</li></ul>
+        <a href="https://api.whatsapp.com/send/?phone=557382408927&text=Olá%2C+tenho+interesse+no+plano+Essencial!&type=phone_number&app_absent=0" class="bpl bpl-o" target="_blank">Quero este plano</a>
+      </div>
+      <div class="p-card feat">
+        <div class="f-badge">Mais escolhido</div>
+        <div class="p-name">Profissional</div><p class="p-desc">Automação completa</p>
+        <div class="p-price"><span class="p-cur">R$</span><span class="p-num">297</span><span class="p-per">/mês</span></div>
+        <p class="p-note">Infraestrutura na nuvem inclusa</p>
+        <hr class="p-div">
+        <ul class="p-feats"><li>Tudo do plano Essencial</li><li>Agendamento com Google Agenda</li><li>CRM invisível + qualificação de leads</li><li>Dashboard em tempo real</li><li>Suporte prioritário</li></ul>
+        <a href="https://api.whatsapp.com/send/?phone=557382408927&text=Olá%2C+tenho+interesse+no+plano+Profissional!&type=phone_number&app_absent=0" class="bpl bpl-f" target="_blank">Começar agora</a>
+      </div>
+      <div class="p-card">
+        <div class="p-name">Enterprise</div><p class="p-desc">Alto volume e múltiplos fluxos</p>
+        <div class="p-price"><span class="p-num" style="font-size:1.9rem;">Sob consulta</span></div>
+        <p class="p-note" style="margin-top:.3rem;">Fale com um especialista</p>
+        <hr class="p-div">
+        <ul class="p-feats"><li>Tudo do plano Profissional</li><li>Múltiplos números e fluxos</li><li>Integrações personalizadas</li><li>Onboarding dedicado</li><li>SLA garantido em contrato</li></ul>
+        <a href="https://api.whatsapp.com/send/?phone=557382408927&text=Olá%2C+quero+saber+sobre+Enterprise!&type=phone_number&app_absent=0" class="bpl bpl-o" target="_blank">Falar com especialista</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="c">
+    <div class="cta-in">
+      <h2 class="cta-t">Pronto para parar de perder clientes<br>fora do horário comercial?</h2>
+      <p class="cta-s">Fale agora com o assistente da Louberg System e veja como funciona, sem compromisso.</p>
+      <div class="cta-b">
+        <a href="https://api.whatsapp.com/send/?phone=557382408927&text=Olá%2C+como+o+sistema+funciona%3F+Estou+interessado!&type=phone_number&app_absent=0" class="btn-p" target="_blank" rel="noopener">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Testar agora no WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="ft-b">LOUBERG<span>.</span>SYSTEM</div>
+  <span class="ft-n">© 2025 Louberg System. Todos os direitos reservados.</span>
+  <span class="ft-n" style="color:rgba(232,237,245,.2);font-size:.68rem;">Automação de Processos & IA</span>
+</footer>
+
+<script>
+/* CURSOR */
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-r');
+let mx=-300,my=-300;
+const isTouch=window.matchMedia('(hover: none)').matches;
+if(!isTouch){
+  document.addEventListener('mousemove',e=>{
+    mx=e.clientX;my=e.clientY;
+    cur.style.left=mx+'px';cur.style.top=my+'px';
+    ring.style.left=mx+'px';ring.style.top=my+'px';
+  });
+  document.querySelectorAll('a,button').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{cur.style.width='16px';cur.style.height='16px';cur.style.background='#25d366';ring.style.width='44px';ring.style.height='44px';ring.style.borderColor='rgba(37,211,102,.35)';});
+    el.addEventListener('mouseleave',()=>{cur.style.width='9px';cur.style.height='9px';cur.style.background='#e03428';ring.style.width='30px';ring.style.height='30px';ring.style.borderColor='rgba(224,52,40,.4)';});
+  });
+}
+
+/* HAMBURGER */
+const hamBtn=document.getElementById('ham'),mobMenu=document.getElementById('mob');
+hamBtn.addEventListener('click',()=>{hamBtn.classList.toggle('open');mobMenu.classList.toggle('open');});
+function closeM(){hamBtn.classList.remove('open');mobMenu.classList.remove('open');}
+
+/* ROBOT CANVAS */
+const canvas=document.getElementById('bgc');
+const ctx=canvas.getContext('2d');
+let W=0,H=0;
+const ROBOTS=26,REPEL_R=140,REPEL_F=4.2;
+
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+resize();
+window.addEventListener('resize',resize);
+
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+class Robot{
+  constructor(){
+    this.x=Math.random()*window.innerWidth;
+    this.y=Math.random()*window.innerHeight;
+    this.s=Math.random()*9+9;
+    this.spd=Math.random()*.35+.12;
+    this.vx=(Math.random()-.5)*this.spd;
+    this.vy=(Math.random()-.5)*this.spd;
+    this.ang=Math.random()*Math.PI*2;
+    this.rot=(Math.random()-.5)*.005;
+    this.al=Math.random()*.1+.04;
+    this.bt=Math.random()*100;
+    this.eon=true;
+    this.fvx=0;this.fvy=0;
+    this.flee=false;
+  }
+  tick(px,py){
+    const dx=this.x-px,dy=this.y-py;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<REPEL_R&&d>0){
+      const f=REPEL_F*(1-d/REPEL_R);
+      this.fvx+=dx/d*f;this.fvy+=dy/d*f;this.flee=true;
+    } else {this.flee=false;}
+    this.fvx*=.86;this.fvy*=.86;
+    this.x+=this.vx+this.fvx;this.y+=this.vy+this.fvy;
+    this.ang+=this.rot+(this.flee?.018:0);
+    this.bt++;
+    if(this.bt>80){this.eon=!this.eon;this.bt=0;}
+    if(this.x<-70)this.x=W+30; if(this.x>W+70)this.x=-30;
+    if(this.y<-70)this.y=H+30; if(this.y>H+70)this.y=-30;
+  }
+  draw(){
+    ctx.save();
+    ctx.translate(this.x,this.y);ctx.rotate(this.ang);
+    const s=this.s,a=this.flee?Math.min(this.al*2.8,.3):this.al;
+    ctx.globalAlpha=a;
+    const c=this.flee?'rgba(224,52,40,1)':'rgba(100,150,220,1)';
+    ctx.strokeStyle=c;ctx.lineWidth=.85;ctx.fillStyle='transparent';
+    rr(ctx,-s*.44,-s*.58,s*.88,s*.72,.14*s);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,-s*.58);ctx.lineTo(0,-s*.92);ctx.stroke();
+    ctx.beginPath();ctx.arc(0,-s*.92,s*.08,0,Math.PI*2);
+    ctx.strokeStyle=this.flee?'rgba(255,80,60,1)':'rgba(80,200,255,1)';ctx.stroke();
+    if(this.eon){
+      ctx.fillStyle=this.flee?'rgba(255,70,50,1)':'rgba(80,200,255,1)';
+      ctx.beginPath();ctx.arc(-s*.17,-s*.26,s*.1,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(s*.17,-s*.26,s*.1,0,Math.PI*2);ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.strokeStyle=c;
+    if(this.flee){ctx.arc(0,-s*.04,s*.19,0,Math.PI,true);}
+    else{ctx.arc(0,-s*.04,s*.19,0,Math.PI,false);}
+    ctx.stroke();
+    rr(ctx,-s*.48,s*.18,s*.96,s*.68,.11*s);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-s*.48,s*.34);ctx.lineTo(-s*.82,s*.52);
+    ctx.moveTo(s*.48,s*.34);ctx.lineTo(s*.82,s*.52);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-s*.23,s*.86);ctx.lineTo(-s*.23,s*1.16);
+    ctx.moveTo(s*.23,s*.86);ctx.lineTo(s*.23,s*1.16);ctx.stroke();
+    ctx.restore();
+  }
+}
+
+const bots=Array.from({length:ROBOTS},()=>new Robot());
+let tx=-999,ty=-999;
+
+document.addEventListener('touchmove',e=>{
+  tx=e.touches[0].clientX;ty=e.touches[0].clientY;
+},{passive:true});
+document.addEventListener('touchend',()=>{tx=-999;ty=-999;},{passive:true});
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  const px=tx>-900?tx:mx, py=ty>-900?ty:my;
+  bots.forEach(b=>{b.tick(px,py);b.draw();});
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
